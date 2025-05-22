@@ -1,4 +1,3 @@
-const clientId = 'YOUR_CLIENT_ID'; // Replace this in a secure way (not embedded if public)
 const redirectUri = window.location.href;
 const region = 'mypurecloud.ie';
 
@@ -61,7 +60,7 @@ function createProxyInteraction(queueId, link, agentId) {
     .catch(e => log('Error: ' + e.message));
 }
 
-function init() {
+function initApp(clientId) {
   client.loginImplicitGrant(clientId, redirectUri)
     .then(() => usersApi.getUsersMe())
     .then(me => {
@@ -85,4 +84,14 @@ function init() {
   });
 }
 
-window.addEventListener('load', init);
+function loadConfig() {
+  fetch('client-config.json')
+    .then(response => response.json())
+    .then(config => {
+      if (!config.clientId) throw new Error('clientId missing in config');
+      initApp(config.clientId);
+    })
+    .catch(e => log('Failed to load client config: ' + e.message));
+}
+
+window.addEventListener('load', loadConfig);
