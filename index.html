@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluate External Work</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://sdk-cdn.mypurecloud.com/javascript/genesys-cloud-client-app-sdk/latest/genesys-cloud-client-app-sdk.min.js"></script>
+  <script src="https://unpkg.com/platform-client-sdk@121.0.0/index.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Evaluate External Work</h1>
+    <div>
+      <label for="agentSelect">Select Agent:</label>
+      <select id="agentSelect"></select>
+    </div>
+    <div>
+      <label for="queueId">Queue ID:</label>
+      <input type="text" id="queueId" />
+    </div>
+    <div>
+      <label for="externalRef">External Reference Link:</label>
+      <input type="text" id="externalRef" />
+    </div>
+    <button id="generateBtn">Generate Proxy Interaction</button>
+    <div id="output"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
