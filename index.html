@@ -7,26 +7,32 @@
 <body>
   <h1>Genesys Cloud Dummy Interaction Tool</h1>
 
+  <p id="welcome"></p>
   <button id="loginBtn">Login with Genesys Cloud</button>
 
   <div id="app" style="display:none">
-    <label>Queue:
+    <label>Queue:<br>
       <select id="queueSelect"></select>
     </label>
-    <br>
-    <label>Agent:
+    <br><br>
+    <label>Agent:<br>
       <select id="userSelect"></select>
     </label>
-    <br>
-    <label>External Reference:
+    <br><br>
+    <label>External Reference:<br>
       <input type="text" id="externalRef" placeholder="Enter reference...">
     </label>
-    <br>
-    <label>Evaluation Form:
+    <br><br>
+    <label>Evaluation Form:<br>
       <select id="formSelect"></select>
     </label>
     <br><br>
+    <label>
+      <input type="checkbox" id="includeEval" checked> Include Evaluation
+    </label>
+    <br><br>
     <button id="createBtn">Create Dummy Interaction</button>
+    <p id="statusMsg"></p>
   </div>
 
   <script src="script.js"></script>
