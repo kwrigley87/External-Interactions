@@ -1,13 +1,12 @@
-const CLIENT_ID = 'YOUR_CLIENT_ID';
+const CLIENT_ID = '8e243c51-4a4f-49e9-9f7e-2c8333f02a06';
 const REDIRECT_URI = window.location.href.split('#')[0];
-const REGION = 'mypurecloud.com'; // Change if you're using another region
+const REGION = 'apps.usw2.pure.cloud.com'; // Change if you're using another region
 const SCOPES = [
-  'conversation:write',
+  'conversations',
   'conversation:read',
-  'users:view',
-  'routing:queue:view',
-  'quality:evaluation:edit',
-  'quality:evaluation:view'
+  'users:readonly',
+  'routing:readonly',
+  'quality'
 ].join(' ');
 
 const AUTH_URL = `https://login.${REGION}/oauth/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
