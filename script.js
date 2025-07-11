@@ -1,6 +1,6 @@
 const CLIENT_ID = '8e243c51-4a4f-49e9-9f7e-2c8333f02a06';
 const REDIRECT_URI = window.location.href.split('#')[0];
-const REGION = 'apps.usw2.pure.cloud.com'; // Change if you're using another region
+const REGION = 'usw2.pure.cloud'; // Change if you're using another region
 const SCOPES = [
   'conversations',
   'conversation:read',
