@@ -41,38 +41,47 @@ async function api(path, method = 'GET', body = null) {
   return res.json();
 }
 
+async function fetchAll(path) {
+  let results = [];
+  let pageNumber = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await api(`${path}${path.includes('?') ? '&' : '?'}pageSize=100&pageNumber=${pageNumber}`);
+    results = results.concat(response.entities);
+    hasMore = !!response.nextUri;
+    pageNumber++;
+  }
+
+  return results;
+}
+
 async function init() {
+  const userMe = await api('/api/v2/users/me');
+  document.body.insertAdjacentHTML('afterbegin', `<p>Welcome, ${userMe.name}!</p>`);
+
   const [users, queues, forms] = await Promise.all([
-    api('/api/v2/users?state=active'),
-    api('/api/v2/routing/queues'),
-    api('/api/v2/quality/forms/evaluations')
+    fetchAll('/api/v2/users?state=active'),
+    fetchAll('/api/v2/routing/queues'),
+    fetchAll('/api/v2/quality/forms/evaluations')
   ]);
 
-  const userSelect = document.getElementById('userSelect');
-  users.entities.forEach(u => {
-    const opt = document.createElement('option');
-    opt.value = u.id;
-    opt.textContent = u.name;
-    userSelect.appendChild(opt);
-  });
-
-  const queueSelect = document.getElementById('queueSelect');
-  queues.entities.forEach(q => {
-    const opt = document.createElement('option');
-    opt.value = q.id;
-    opt.textContent = q.name;
-    queueSelect.appendChild(opt);
-  });
-
-  const formSelect = document.getElementById('formSelect');
-  forms.entities.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.id;
-    opt.textContent = f.name;
-    formSelect.appendChild(opt);
-  });
+  populateSelect('userSelect', users);
+  populateSelect('queueSelect', queues);
+  populateSelect('formSelect', forms);
 
   document.getElementById('createBtn').onclick = createInteraction;
+}
+
+function populateSelect(id, items) {
+  const select = document.getElementById(id);
+  select.innerHTML = '';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = item.name;
+    select.appendChild(opt);
+  });
 }
 
 async function createInteraction() {
@@ -80,32 +89,40 @@ async function createInteraction() {
   const userId = document.getElementById('userSelect').value;
   const externalRef = document.getElementById('externalRef').value;
   const formId = document.getElementById('formSelect').value;
+  const includeEval = document.getElementById('includeEval').checked;
 
-  const convo = await api('/api/v2/conversations/emails', 'POST', {
-    queueId,
-    toAddress: 'dummy@example.com',
-    fromAddress: 'test@example.com',
-    subject: 'Dummy Email',
-    direction: 'outbound'
-  });
+  try {
+    const convo = await api('/api/v2/conversations/emails', 'POST', {
+      queueId,
+      toAddress: 'dummy@example.com',
+      fromAddress: 'test@example.com',
+      subject: 'Dummy Email',
+      direction: 'outbound'
+    });
 
-  const convoDetails = await api(`/api/v2/conversations/${convo.id}`);
-  const participant = convoDetails.participants.find(p => p.purpose === 'agent');
+    const convoDetails = await api(`/api/v2/conversations/${convo.id}`);
+    const participant = convoDetails.participants.find(p => p.purpose === 'agent');
 
-  await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
-    userId
-  });
+    await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
+      userId
+    });
 
-  await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
-    externalTag: externalRef
-  });
+    await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
+      externalTag: externalRef
+    });
 
-  await api('/api/v2/quality/evaluations', 'POST', {
-    conversationId: convo.id,
-    agentId: userId,
-    evaluatorId: userId, // assuming self-evaluation for now
-    formId
-  });
+    if (includeEval && formId) {
+      await api('/api/v2/quality/evaluations', 'POST', {
+        conversationId: convo.id,
+        agentId: userId,
+        evaluatorId: userId,
+        formId
+      });
+    }
 
-  alert('Dummy interaction and evaluation created!');
+    alert('✅ Dummy interaction created successfully!');
+  } catch (error) {
+    console.error('Error creating interaction:', error);
+    alert('❌ Failed to create interaction. See console for details.');
+  }
 }
