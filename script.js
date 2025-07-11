@@ -37,6 +37,13 @@ async function api(path, method = 'GET', body = null) {
     },
     body: body ? JSON.stringify(body) : null
   });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error(`API error [${res.status}]:`, err);
+    throw new Error(err);
+  }
+
   return res.json();
 }
 
@@ -57,7 +64,7 @@ async function fetchAll(path) {
 
 async function init() {
   const userMe = await api('/api/v2/users/me');
-  document.body.insertAdjacentHTML('afterbegin', `<p>Welcome, ${userMe.name}!</p>`);
+  document.getElementById('welcome').textContent = `Welcome, ${userMe.name}!`;
 
   const [users, queues, forms] = await Promise.all([
     fetchAll('/api/v2/users?state=active'),
@@ -89,18 +96,26 @@ async function createInteraction() {
   const externalRef = document.getElementById('externalRef').value;
   const formId = document.getElementById('formSelect').value;
   const includeEval = document.getElementById('includeEval').checked;
+  const statusMsg = document.getElementById('statusMsg');
+  statusMsg.textContent = 'Creating dummy interaction...';
 
   try {
     const convo = await api('/api/v2/conversations/emails', 'POST', {
       queueId,
-      toAddress: 'dummy@example.com',
-      fromAddress: 'test@example.com',
-      subject: 'Dummy Email',
-      direction: 'outbound'
+      provider: 'QualityForm',
+      priority: 0,
+      direction: 'inbound',
+      fromName: 'External Work',
+      attributes: {
+        'External Reference': externalRef
+      }
     });
 
+    if (!convo.id) throw new Error('Conversation creation failed');
+
     const convoDetails = await api(`/api/v2/conversations/${convo.id}`);
-    const participant = convoDetails.participants.find(p => p.purpose === 'agent');
+    const participant = convoDetails.participants[1];
+    if (!participant) throw new Error('Second participant not found');
 
     await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
       userId
@@ -119,9 +134,13 @@ async function createInteraction() {
       });
     }
 
-    alert('✅ Dummy interaction created successfully!');
+    await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
+      state: 'disconnected'
+    });
+
+    statusMsg.textContent = '✅ Dummy interaction created and disconnected successfully!';
   } catch (error) {
     console.error('Error creating interaction:', error);
-    alert('❌ Failed to create interaction. See console for details.');
+    statusMsg.textContent = '❌ Failed to create interaction. See console for details.';
   }
 }
