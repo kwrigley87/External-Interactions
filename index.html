@@ -1,30 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluate External Work</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://sdk-cdn.mypurecloud.com/javascript/genesys-cloud-client-app-sdk/latest/genesys-cloud-client-app-sdk.min.js"></script>
-  <script src="https://unpkg.com/platform-client-sdk@121.0.0/index.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Dummy Interaction App</title>
 </head>
 <body>
-  <div class="container">
-    <h1>Evaluate External Work</h1>
-    <div>
-      <label for="agentSelect">Select Agent:</label>
-      <select id="agentSelect"></select>
-    </div>
-    <div>
-      <label for="queueId">Queue ID:</label>
-      <input type="text" id="queueId" />
-    </div>
-    <div>
-      <label for="externalRef">External Reference Link:</label>
-      <input type="text" id="externalRef" />
-    </div>
-    <button id="generateBtn">Generate Proxy Interaction</button>
-    <div id="output"></div>
+  <h1>Genesys Cloud Dummy Interaction Tool</h1>
+
+  <button id="loginBtn">Login with Genesys Cloud</button>
+
+  <div id="app" style="display:none">
+    <label>Queue:
+      <select id="queueSelect"></select>
+    </label>
+    <br>
+    <label>Agent:
+      <select id="userSelect"></select>
+    </label>
+    <br>
+    <label>External Reference:
+      <input type="text" id="externalRef" placeholder="Enter reference...">
+    </label>
+    <br>
+    <label>Evaluation Form:
+      <select id="formSelect"></select>
+    </label>
+    <br><br>
+    <button id="createBtn">Create Dummy Interaction</button>
   </div>
 
   <script src="script.js"></script>
