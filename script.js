@@ -1,97 +1,112 @@
-const redirectUri = window.location.href;
-const region = 'mypurecloud.ie';
+const CLIENT_ID = 'YOUR_CLIENT_ID';
+const REDIRECT_URI = window.location.href.split('#')[0];
+const REGION = 'mypurecloud.com'; // Change if you're using another region
+const SCOPES = [
+  'conversation:write',
+  'conversation:read',
+  'users:view',
+  'routing:queue:view',
+  'quality:evaluation:edit',
+  'quality:evaluation:view'
+].join(' ');
 
-const platformClient = window['platformClient'];
-const client = platformClient.ApiClient.instance;
-client.setEnvironment(region);
+const AUTH_URL = `https://login.${REGION}/oauth/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
 
-let conversationsApi = new platformClient.ConversationsApi();
-let usersApi = new platformClient.UsersApi();
+const token = getTokenFromHash();
 
-let currentUser = null;
-
-function log(message) {
-  document.getElementById('output').innerText += `\n${message}`;
-}
-
-function populateAgentDropdown(users) {
-  const select = document.getElementById('agentSelect');
-  users.forEach(user => {
-    const option = document.createElement('option');
-    option.value = user.id;
-    option.text = user.name;
-    select.appendChild(option);
-  });
-}
-
-function getAgentsInDivision(divisionId) {
-  return usersApi.getUsers({ divisionId })
-    .then(data => populateAgentDropdown(data.entities))
-    .catch(e => log('Error loading agents: ' + e.message));
-}
-
-function createProxyInteraction(queueId, link, agentId) {
-  const emailData = {
-    queueId: queueId,
-    provider: 'QualityForm',
-    priority: 0,
-    direction: 'INBOUND',
-    fromName: 'External Work',
-    attributes: {
-      'External Link': link
-    }
+if (token) {
+  document.getElementById('loginBtn').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  init();
+} else {
+  document.getElementById('loginBtn').onclick = () => {
+    window.location.href = AUTH_URL;
   };
-
-  conversationsApi.postConversationsEmails(emailData)
-    .then(response => {
-      const convoId = response.id;
-      log(`Created interaction: ${convoId}`);
-
-      return conversationsApi.getConversation(convoId).then(convo => {
-        const participantId = convo.participants[1].id;
-        return conversationsApi.postConversationsEmailParticipantReplace(convoId, participantId, { userId: agentId })
-          .then(() => {
-            log('Agent assigned. Disconnecting...');
-            return conversationsApi.patchConversationEmail(convoId, { state: 'disconnected' });
-          })
-          .then(() => log('Conversation completed and disconnected.'));
-      });
-    })
-    .catch(e => log('Error: ' + e.message));
 }
 
-function initApp(clientId) {
-  client.loginImplicitGrant(clientId, redirectUri)
-    .then(() => usersApi.getUsersMe())
-    .then(me => {
-      currentUser = me;
-      log(`Authenticated as ${me.name}`);
-      return getAgentsInDivision(me.division.id);
-    })
-    .catch(e => log('Login failed: ' + e.message));
+function getTokenFromHash() {
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  return params.get('access_token');
+}
 
-  document.getElementById('generateBtn').addEventListener('click', () => {
-    const queueId = document.getElementById('queueId').value;
-    const link = document.getElementById('externalRef').value;
-    const agentId = document.getElementById('agentSelect').value;
-
-    if (!queueId || !link || !agentId) {
-      alert('Please complete all fields');
-      return;
-    }
-
-    createProxyInteraction(queueId, link, agentId);
+async function api(path, method = 'GET', body = null) {
+  const res = await fetch(`https://api.${REGION}${path}`, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : null
   });
+  return res.json();
 }
 
-function loadConfig() {
-  fetch('client-config.json')
-    .then(response => response.json())
-    .then(config => {
-      if (!config.clientId) throw new Error('clientId missing in config');
-      initApp(config.clientId);
-    })
-    .catch(e => log('Failed to load client config: ' + e.message));
+async function init() {
+  const [users, queues, forms] = await Promise.all([
+    api('/api/v2/users?state=active'),
+    api('/api/v2/routing/queues'),
+    api('/api/v2/quality/forms/evaluations')
+  ]);
+
+  const userSelect = document.getElementById('userSelect');
+  users.entities.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = u.name;
+    userSelect.appendChild(opt);
+  });
+
+  const queueSelect = document.getElementById('queueSelect');
+  queues.entities.forEach(q => {
+    const opt = document.createElement('option');
+    opt.value = q.id;
+    opt.textContent = q.name;
+    queueSelect.appendChild(opt);
+  });
+
+  const formSelect = document.getElementById('formSelect');
+  forms.entities.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = f.name;
+    formSelect.appendChild(opt);
+  });
+
+  document.getElementById('createBtn').onclick = createInteraction;
 }
 
-window.addEventListener('load', loadConfig);
+async function createInteraction() {
+  const queueId = document.getElementById('queueSelect').value;
+  const userId = document.getElementById('userSelect').value;
+  const externalRef = document.getElementById('externalRef').value;
+  const formId = document.getElementById('formSelect').value;
+
+  const convo = await api('/api/v2/conversations/emails', 'POST', {
+    queueId,
+    toAddress: 'dummy@example.com',
+    fromAddress: 'test@example.com',
+    subject: 'Dummy Email',
+    direction: 'outbound'
+  });
+
+  const convoDetails = await api(`/api/v2/conversations/${convo.id}`);
+  const participant = convoDetails.participants.find(p => p.purpose === 'agent');
+
+  await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
+    userId
+  });
+
+  await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
+    externalTag: externalRef
+  });
+
+  await api('/api/v2/quality/evaluations', 'POST', {
+    conversationId: convo.id,
+    agentId: userId,
+    evaluatorId: userId, // assuming self-evaluation for now
+    formId
+  });
+
+  alert('Dummy interaction and evaluation created!');
+}
