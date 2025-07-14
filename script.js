@@ -67,7 +67,7 @@ async function init() {
   window.loggedInUserId = userMe.id;
   document.getElementById('welcome').textContent = `Welcome, ${userMe.name}!`;
 
-  const [users, queues, allForms] = await Promise.all([
+  const [users, queues, forms] = await Promise.all([
     fetchAll('/api/v2/users?state=active'),
     fetchAll('/api/v2/routing/queues'),
     fetchAll('/api/v2/quality/forms/evaluations')
@@ -75,7 +75,7 @@ async function init() {
 
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
-  populateSelect('formSelect', allForms);
+  populateSelect('formSelect', forms);
 
   document.getElementById('createBtn').onclick = createInteraction;
 }
@@ -91,19 +91,11 @@ function populateSelect(id, items) {
   });
 }
 
-async function getLatestPublishedVersion(formId) {
-  const versions = await fetchAll(`/api/v2/quality/forms/evaluations/${formId}/versions`);
-  const published = versions
-    .filter(v => v.published)
-    .sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate));
-  return published.length > 0 ? published[0].id : null;
-}
-
 async function createInteraction() {
   const queueId = document.getElementById('queueSelect').value;
   const userId = document.getElementById('userSelect').value;
   const externalRef = document.getElementById('externalRef').value;
-  const selectedFormId = document.getElementById('formSelect').value;
+  const formId = document.getElementById('formSelect').value;
   const includeEval = document.getElementById('includeEval').checked;
   const statusMsg = document.getElementById('statusMsg');
   statusMsg.textContent = 'Creating dummy interaction...';
@@ -130,12 +122,9 @@ async function createInteraction() {
       userId: userId
     });
 
-    if (includeEval && selectedFormId) {
-      const publishedFormVersionId = await getLatestPublishedVersion(selectedFormId);
-      if (!publishedFormVersionId) throw new Error('No published version found for selected form');
-
+    if (includeEval && formId) {
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
-        evaluationForm: { id: publishedFormVersionId },
+        evaluationForm: { id: formId },
         evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
@@ -151,4 +140,3 @@ async function createInteraction() {
     statusMsg.textContent = '❌ Failed to create interaction. See console for details.';
   }
 }
-
