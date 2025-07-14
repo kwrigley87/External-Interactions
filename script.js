@@ -101,7 +101,7 @@ async function createInteraction() {
 
   try {
     const convo = await api('/api/v2/conversations/emails', 'POST', {
-      queueId,
+      queueId: queueId,
       provider: 'QualityForm',
       priority: 0,
       direction: 'inbound',
@@ -118,7 +118,7 @@ async function createInteraction() {
     if (!participant) throw new Error('Second participant not found');
 
     await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
-      userId
+      userId: userId
     });
 
     await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
@@ -126,11 +126,10 @@ async function createInteraction() {
     });
 
     if (includeEval && formId) {
-      await api('/api/v2/quality/evaluations', 'POST', {
-        conversationId: convo.id,
-        agentId: userId,
-        evaluatorId: userId,
-        formId
+      await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
+        evaluationForm: { id: formId },
+        evaluator: { id: userId },
+        agent: { id: userId }
       });
     }
 
