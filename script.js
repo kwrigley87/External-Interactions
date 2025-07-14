@@ -77,6 +77,7 @@ async function init() {
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
   populateSelect('formSelect', forms);
+  initTomSelects();
 
   // Apply Tom Select after options are added
   ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
