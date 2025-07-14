@@ -121,10 +121,6 @@ async function createInteraction() {
       userId: userId
     });
 
-    await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
-      externalTag: externalRef
-    });
-
     if (includeEval && formId) {
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
         evaluationForm: { id: formId },
