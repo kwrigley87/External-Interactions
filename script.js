@@ -1,3 +1,4 @@
+// script.js
 const CLIENT_ID = '8e243c51-4a4f-49e9-9f7e-2c8333f02a06';
 const REDIRECT_URI = 'https://kwrigley87.github.io/PSTools/';
 const REGION = 'usw2.pure.cloud';
@@ -77,6 +78,15 @@ async function init() {
   populateSelect('queueSelect', queues);
   populateSelect('formSelect', forms);
 
+  // Apply Tom Select after options are added
+  ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
+    new TomSelect(`#${id}`, {
+      create: false,
+      allowEmptyOption: false,
+      placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
+    });
+  });
+
   document.getElementById('createBtn').onclick = createInteraction;
 }
 
@@ -89,14 +99,6 @@ function populateSelect(id, items) {
     opt.textContent = item.name;
     select.appendChild(opt);
   });
-}
-
-async function getLatestPublishedVersion(formId) {
-  const versions = await fetchAll(`/api/v2/quality/forms/evaluations/${formId}/versions`);
-  const published = versions
-    .filter(v => v.published)
-    .sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate));
-  return published.length > 0 ? published[0].id : null;
 }
 
 async function createInteraction() {
@@ -134,23 +136,25 @@ async function createInteraction() {
       state: 'disconnected'
     });
 
-    statusMsg.textContent = '✅ Dummy interaction created and disconnected.';
-
     if (includeEval && formId) {
-      const publishedFormVersionId = await getLatestPublishedVersion(formId);
-      if (!publishedFormVersionId) throw new Error('No published version found for selected form');
+      const versions = await api(`/api/v2/quality/forms/evaluations/${formId}/versions`);
+      const published = versions.entities.filter(v => v.published);
+      if (published.length === 0) throw new Error('No published version of the form found');
+      const latest = published.sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate))[0];
 
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
-        evaluationForm: { id: publishedFormVersionId },
+        evaluationForm: { id: latest.id },
         evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
 
-      statusMsg.textContent += ' ✅ Evaluation submitted successfully!';
+      statusMsg.textContent = '✅ Dummy interaction and evaluation created!';
+    } else {
+      statusMsg.textContent = '✅ Dummy interaction created and disconnected!';
     }
 
   } catch (error) {
     console.error('Error creating interaction:', error);
-    statusMsg.textContent = '❌ Failed to complete all steps. See console for details.';
+    statusMsg.textContent = '❌ Failed to create interaction. See console for details.';
   }
 }
