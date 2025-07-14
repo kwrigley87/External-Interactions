@@ -20,19 +20,19 @@
       <div id="app" style="display: none">
         <div class="mb-4">
           <label for="userSelect" class="block text-sm font-medium text-gray-700">Select Agent</label>
-          <select id="userSelect" class="w-full mt-1"></select>
+          <select id="userSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
         </div>
         <div class="mb-4">
           <label for="queueSelect" class="block text-sm font-medium text-gray-700">Select Queue</label>
-          <select id="queueSelect" class="w-full mt-1"></select>
+          <select id="queueSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
         </div>
         <div class="mb-4">
           <label for="externalRef" class="block text-sm font-medium text-gray-700">External Reference</label>
-          <input type="text" id="externalRef" class="w-full px-3 py-2 border rounded" />
+          <input type="text" id="externalRef" class="w-full px-3 py-2 border border-gray-300 rounded" />
         </div>
         <div class="mb-4">
           <label for="formSelect" class="block text-sm font-medium text-gray-700">Evaluation Form (optional)</label>
-          <select id="formSelect" class="w-full mt-1"></select>
+          <select id="formSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
           <div class="mt-2">
             <label class="inline-flex items-center">
               <input type="checkbox" id="includeEval" class="form-checkbox text-blue-600" />
@@ -49,6 +49,22 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script>
+    function initTomSelects() {
+      ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
+        new TomSelect(`#${id}`, {
+          create: false,
+          allowEmptyOption: false,
+          maxOptions: 1000,
+          sortField: {
+            field: "text",
+            direction: "asc"
+          },
+          placeholder: "Search..."
+        });
+      });
+    }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
