@@ -67,7 +67,7 @@ async function init() {
   window.loggedInUserId = userMe.id;
   document.getElementById('welcome').textContent = `Welcome, ${userMe.name}!`;
 
-  const [users, queues, forms] = await Promise.all([
+  const [users, queues, allForms] = await Promise.all([
     fetchAll('/api/v2/users?state=active'),
     fetchAll('/api/v2/routing/queues'),
     fetchAll('/api/v2/quality/forms/evaluations')
