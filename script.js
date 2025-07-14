@@ -130,6 +130,12 @@ async function createInteraction() {
       userId: userId
     });
 
+    await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
+      state: 'disconnected'
+    });
+
+    statusMsg.textContent = '✅ Dummy interaction created and disconnected.';
+
     if (includeEval && formId) {
       const publishedFormVersionId = await getLatestPublishedVersion(formId);
       if (!publishedFormVersionId) throw new Error('No published version found for selected form');
@@ -139,15 +145,12 @@ async function createInteraction() {
         evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
+
+      statusMsg.textContent += ' ✅ Evaluation submitted successfully!';
     }
 
-    await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
-      state: 'disconnected'
-    });
-
-    statusMsg.textContent = '✅ Dummy interaction created and disconnected successfully!';
   } catch (error) {
     console.error('Error creating interaction:', error);
-    statusMsg.textContent = '❌ Failed to create interaction. See console for details.';
+    statusMsg.textContent = '❌ Failed to complete all steps. See console for details.';
   }
 }
