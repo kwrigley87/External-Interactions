@@ -64,6 +64,7 @@ async function fetchAll(path) {
 
 async function init() {
   const userMe = await api('/api/v2/users/me');
+  window.loggedInUserId = userMe.id;
   document.getElementById('welcome').textContent = `Welcome, ${userMe.name}!`;
 
   const [users, queues, forms] = await Promise.all([
@@ -124,7 +125,7 @@ async function createInteraction() {
     if (includeEval && formId) {
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
         evaluationForm: { id: formId },
-        evaluator: { id: userId },
+        evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
     }
