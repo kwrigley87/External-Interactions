@@ -73,33 +73,9 @@ async function init() {
     fetchAll('/api/v2/quality/forms/evaluations')
   ]);
 
-  const publishedForms = allForms.filter(form => form.publishedVersion && form.publishedVersion.id);
-
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
-
-  const formSelect = document.getElementById('formSelect');
-  formSelect.innerHTML = '';
-
-  if (publishedForms.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'No published evaluation forms available';
-    formSelect.appendChild(opt);
-    formSelect.disabled = true;
-    document.getElementById('includeEval').checked = false;
-    document.getElementById('includeEval').disabled = true;
-  } else {
-    formSelect.disabled = false;
-    document.getElementById('includeEval').disabled = false;
-
-    publishedForms.forEach(form => {
-      const opt = document.createElement('option');
-      opt.value = form.publishedVersion.id;
-      opt.textContent = `${form.name} (v${form.publishedVersion.version})`;
-      formSelect.appendChild(opt);
-    });
-  }
+  populateSelect('formSelect', allForms);
 
   document.getElementById('createBtn').onclick = createInteraction;
 }
@@ -115,11 +91,19 @@ function populateSelect(id, items) {
   });
 }
 
+async function getLatestPublishedVersion(formId) {
+  const versions = await fetchAll(`/api/v2/quality/forms/evaluations/${formId}/versions`);
+  const published = versions
+    .filter(v => v.published)
+    .sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate));
+  return published.length > 0 ? published[0].id : null;
+}
+
 async function createInteraction() {
   const queueId = document.getElementById('queueSelect').value;
   const userId = document.getElementById('userSelect').value;
   const externalRef = document.getElementById('externalRef').value;
-  const formId = document.getElementById('formSelect').value;
+  const selectedFormId = document.getElementById('formSelect').value;
   const includeEval = document.getElementById('includeEval').checked;
   const statusMsg = document.getElementById('statusMsg');
   statusMsg.textContent = 'Creating dummy interaction...';
@@ -146,9 +130,12 @@ async function createInteraction() {
       userId: userId
     });
 
-    if (includeEval && formId) {
+    if (includeEval && selectedFormId) {
+      const publishedFormVersionId = await getLatestPublishedVersion(selectedFormId);
+      if (!publishedFormVersionId) throw new Error('No published version found for selected form');
+
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
-        evaluationForm: { id: formId },
+        evaluationForm: { id: publishedFormVersionId },
         evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
