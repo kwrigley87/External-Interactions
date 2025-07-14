@@ -91,6 +91,14 @@ function populateSelect(id, items) {
   });
 }
 
+async function getLatestPublishedVersion(formId) {
+  const versions = await fetchAll(`/api/v2/quality/forms/evaluations/${formId}/versions`);
+  const published = versions
+    .filter(v => v.published)
+    .sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate));
+  return published.length > 0 ? published[0].id : null;
+}
+
 async function createInteraction() {
   const queueId = document.getElementById('queueSelect').value;
   const userId = document.getElementById('userSelect').value;
@@ -123,8 +131,11 @@ async function createInteraction() {
     });
 
     if (includeEval && formId) {
+      const publishedFormVersionId = await getLatestPublishedVersion(formId);
+      if (!publishedFormVersionId) throw new Error('No published version found for selected form');
+
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
-        evaluationForm: { id: formId },
+        evaluationForm: { id: publishedFormVersionId },
         evaluator: { id: window.loggedInUserId },
         agent: { id: userId }
       });
