@@ -151,3 +151,4 @@ async function createInteraction() {
     statusMsg.textContent = '❌ Failed to create interaction. See console for details.';
   }
 }
+
