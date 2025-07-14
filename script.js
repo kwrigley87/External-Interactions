@@ -73,9 +73,20 @@ async function init() {
     fetchAll('/api/v2/quality/forms/evaluations')
   ]);
 
+  // Filter only published forms and latest versions
+  const publishedForms = allForms.filter(form => form.published === true && form.publishedVersion);
+
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
-  populateSelect('formSelect', forms);
+
+  const formSelect = document.getElementById('formSelect');
+  formSelect.innerHTML = '';
+  publishedForms.forEach(form => {
+    const opt = document.createElement('option');
+    opt.value = form.publishedVersion.id;
+    opt.textContent = `${form.name} (v${form.publishedVersion.version})`;
+    formSelect.appendChild(opt);
+  });
 
   document.getElementById('createBtn').onclick = createInteraction;
 }
