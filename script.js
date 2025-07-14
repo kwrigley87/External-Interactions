@@ -73,20 +73,33 @@ async function init() {
     fetchAll('/api/v2/quality/forms/evaluations')
   ]);
 
-  // Filter only published forms and latest versions
-  const publishedForms = allForms.filter(form => form.published === true && form.publishedVersion);
+  const publishedForms = allForms.filter(form => form.publishedVersion && form.publishedVersion.id);
 
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
 
   const formSelect = document.getElementById('formSelect');
   formSelect.innerHTML = '';
-  publishedForms.forEach(form => {
+
+  if (publishedForms.length === 0) {
     const opt = document.createElement('option');
-    opt.value = form.publishedVersion.id;
-    opt.textContent = `${form.name} (v${form.publishedVersion.version})`;
+    opt.value = '';
+    opt.textContent = 'No published evaluation forms available';
     formSelect.appendChild(opt);
-  });
+    formSelect.disabled = true;
+    document.getElementById('includeEval').checked = false;
+    document.getElementById('includeEval').disabled = true;
+  } else {
+    formSelect.disabled = false;
+    document.getElementById('includeEval').disabled = false;
+
+    publishedForms.forEach(form => {
+      const opt = document.createElement('option');
+      opt.value = form.publishedVersion.id;
+      opt.textContent = `${form.name} (v${form.publishedVersion.version})`;
+      formSelect.appendChild(opt);
+    });
+  }
 
   document.getElementById('createBtn').onclick = createInteraction;
 }
