@@ -6,6 +6,14 @@
   <title>Genesys Dummy Interaction</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    #createBtn {
+      z-index: 9999 !important;
+      pointer-events: auto !important;
+      position: relative;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
   <div class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -20,19 +28,19 @@
       <div id="app" style="display: none">
         <div class="mb-4">
           <label for="userSelect" class="block text-sm font-medium text-gray-700">Select Agent</label>
-          <select id="userSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
+          <select id="userSelect" class="w-full mt-1"></select>
         </div>
         <div class="mb-4">
           <label for="queueSelect" class="block text-sm font-medium text-gray-700">Select Queue</label>
-          <select id="queueSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
+          <select id="queueSelect" class="w-full mt-1"></select>
         </div>
         <div class="mb-4">
           <label for="externalRef" class="block text-sm font-medium text-gray-700">External Reference</label>
-          <input type="text" id="externalRef" class="w-full px-3 py-2 border border-gray-300 rounded" />
+          <input type="text" id="externalRef" class="w-full px-3 py-2 border rounded" />
         </div>
         <div class="mb-4">
           <label for="formSelect" class="block text-sm font-medium text-gray-700">Evaluation Form (optional)</label>
-          <select id="formSelect" class="w-full mt-1 border border-gray-300 rounded"></select>
+          <select id="formSelect" class="w-full mt-1"></select>
           <div class="mt-2">
             <label class="inline-flex items-center">
               <input type="checkbox" id="includeEval" class="form-checkbox text-blue-600" />
@@ -41,7 +49,7 @@
           </div>
         </div>
         <div class="text-center">
-          <button id="createBtn" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Create Dummy Interaction</button>
+          <button id="createBtn" type="button" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Create Dummy Interaction</button>
         </div>
         <p id="statusMsg" class="text-center mt-4 text-sm text-gray-700"></p>
       </div>
@@ -52,15 +60,12 @@
   <script>
     function initTomSelects() {
       ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
-        new TomSelect(`#${id}`, {
+        const el = document.getElementById(id);
+        if (el.tomselect) el.tomselect.destroy();
+        new TomSelect(el, {
           create: false,
           allowEmptyOption: false,
-          maxOptions: 1000,
-          sortField: {
-            field: "text",
-            direction: "asc"
-          },
-          placeholder: "Search..."
+          placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
         });
       });
     }
