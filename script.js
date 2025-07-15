@@ -1,4 +1,3 @@
-// script.js
 const CLIENT_ID = '8e243c51-4a4f-49e9-9f7e-2c8333f02a06';
 const REDIRECT_URI = 'https://kwrigley87.github.io/PSTools/';
 const REGION = 'usw2.pure.cloud';
@@ -11,17 +10,22 @@ const SCOPES = [
 
 const AUTH_URL = `https://login.${REGION}/oauth/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
 
-const token = getTokenFromHash();
+document.addEventListener('DOMContentLoaded', () => {
+  const token = getTokenFromHash();
 
-if (token) {
-  document.getElementById('loginBtn').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  init();
-} else {
-  document.getElementById('loginBtn').onclick = () => {
-    window.location.href = AUTH_URL;
-  };
-}
+  if (token) {
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        window.location.href = AUTH_URL;
+      });
+    }
+  }
+});
 
 function getTokenFromHash() {
   const hash = window.location.hash.substring(1);
@@ -33,7 +37,7 @@ async function api(path, method = 'GET', body = null) {
   const res = await fetch(`https://api.${REGION}${path}`, {
     method,
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${getTokenFromHash()}`,
       'Content-Type': 'application/json'
     },
     body: body ? JSON.stringify(body) : null
@@ -78,7 +82,15 @@ async function init() {
   populateSelect('queueSelect', queues);
   populateSelect('formSelect', forms);
 
-  document.getElementById('createBtn').onclick = createInteraction;
+  ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
+    new TomSelect(`#${id}`, {
+      create: false,
+      allowEmptyOption: false,
+      placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
+    });
+  });
+
+  bindCreateButton();
 }
 
 function populateSelect(id, items) {
@@ -90,18 +102,16 @@ function populateSelect(id, items) {
     opt.textContent = item.name;
     select.appendChild(opt);
   });
+}
 
-  // Destroy TomSelect instance if it already exists
-  if (select.tomselect) {
-    select.tomselect.destroy();
+function bindCreateButton() {
+  const createBtn = document.getElementById('createBtn');
+  if (createBtn) {
+    createBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await createInteraction();
+    });
   }
-
-  // Initialize TomSelect for searchable dropdown
-  new TomSelect(select, {
-    create: false,
-    allowEmptyOption: false,
-    placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
-  });
 }
 
 async function createInteraction() {
@@ -114,7 +124,6 @@ async function createInteraction() {
   statusMsg.textContent = 'Creating dummy interaction...';
 
   try {
-    // Create the dummy conversation
     const convo = await api('/api/v2/conversations/emails', 'POST', {
       queueId: queueId,
       provider: 'QualityForm',
@@ -132,22 +141,18 @@ async function createInteraction() {
     const participant = convoDetails.participants[1];
     if (!participant) throw new Error('Second participant not found');
 
-    // Assign to agent
     await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
       userId: userId
     });
 
-    // Disconnect conversation
     await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
       state: 'disconnected'
     });
 
-    // Create evaluation if selected
     if (includeEval && formId) {
       const versions = await api(`/api/v2/quality/forms/evaluations/${formId}/versions`);
       const published = versions.entities.filter(v => v.published);
       if (published.length === 0) throw new Error('No published version of the form found');
-
       const latest = published.sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate))[0];
 
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
