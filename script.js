@@ -77,16 +77,6 @@ async function init() {
   populateSelect('userSelect', users);
   populateSelect('queueSelect', queues);
   populateSelect('formSelect', forms);
-  initTomSelects();
-
-  // Apply Tom Select after options are added
-  ['userSelect', 'queueSelect', 'formSelect'].forEach(id => {
-    new TomSelect(`#${id}`, {
-      create: false,
-      allowEmptyOption: false,
-      placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
-    });
-  });
 
   document.getElementById('createBtn').onclick = createInteraction;
 }
@@ -100,6 +90,18 @@ function populateSelect(id, items) {
     opt.textContent = item.name;
     select.appendChild(opt);
   });
+
+  // Destroy TomSelect instance if it already exists
+  if (select.tomselect) {
+    select.tomselect.destroy();
+  }
+
+  // Initialize TomSelect for searchable dropdown
+  new TomSelect(select, {
+    create: false,
+    allowEmptyOption: false,
+    placeholder: `Search ${id.replace('Select', '').toLowerCase()}...`
+  });
 }
 
 async function createInteraction() {
@@ -112,6 +114,7 @@ async function createInteraction() {
   statusMsg.textContent = 'Creating dummy interaction...';
 
   try {
+    // Create the dummy conversation
     const convo = await api('/api/v2/conversations/emails', 'POST', {
       queueId: queueId,
       provider: 'QualityForm',
@@ -129,18 +132,22 @@ async function createInteraction() {
     const participant = convoDetails.participants[1];
     if (!participant) throw new Error('Second participant not found');
 
+    // Assign to agent
     await api(`/api/v2/conversations/emails/${convo.id}/participants/${participant.id}/replace`, 'POST', {
       userId: userId
     });
 
+    // Disconnect conversation
     await api(`/api/v2/conversations/emails/${convo.id}`, 'PATCH', {
       state: 'disconnected'
     });
 
+    // Create evaluation if selected
     if (includeEval && formId) {
       const versions = await api(`/api/v2/quality/forms/evaluations/${formId}/versions`);
       const published = versions.entities.filter(v => v.published);
       if (published.length === 0) throw new Error('No published version of the form found');
+
       const latest = published.sort((a, b) => new Date(b.modifiedDate) - new Date(a.modifiedDate))[0];
 
       await api(`/api/v2/quality/conversations/${convo.id}/evaluations`, 'POST', {
