@@ -96,6 +96,13 @@ async function init() {
 function populateSelect(id, items) {
   const select = document.getElementById(id);
   select.innerHTML = '';
+
+  // Insert empty option first
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = `Select ${id.replace('Select', '').toLowerCase()}...`;
+  select.appendChild(placeholder);
+
   items.forEach(item => {
     const opt = document.createElement('option');
     opt.value = item.id;
