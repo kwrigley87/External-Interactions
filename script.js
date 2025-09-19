@@ -1,5 +1,5 @@
 const CLIENT_ID = '8e243c51-4a4f-49e9-9f7e-2c8333f02a06';
-const REDIRECT_URI = 'https://kwrigley87.github.io/PSTools/';
+const REDIRECT_URI = 'https://kwrigley87.github.io/External-Interactions/';
 const REGION = 'usw2.pure.cloud';
 const SCOPES = [
   'conversations',
